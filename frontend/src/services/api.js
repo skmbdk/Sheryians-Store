@@ -1,8 +1,19 @@
 import axios from 'axios';
 
+// Dynamic API base URL (uses relative /api when deployed or localhost:5000 in dev)
+const getBaseURL = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:5000/api';
+  }
+  return '/api';
+};
+
 // Create Axios instance for API requests
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: getBaseURL(),
   withCredentials: true
 });
 
@@ -37,7 +48,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If request fails with 401 and hasn't been retried yet
     if (
       error.response &&
       error.response.status === 401 &&
@@ -48,9 +58,9 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
-        // Attempt to get a new access token using httpOnly refresh token cookie
+        const baseURL = getBaseURL();
         const res = await axios.post(
-          'http://localhost:5000/api/auth/refresh-token',
+          `${baseURL}/auth/refresh-token`,
           {},
           { withCredentials: true }
         );
@@ -58,11 +68,9 @@ api.interceptors.response.use(
         const newAccessToken = res.data.accessToken;
         setStoredToken(newAccessToken);
 
-        // Update authorization header and retry original request
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, clear user state
         removeStoredToken();
         removeStoredUser();
         window.dispatchEvent(new Event('auth:logout'));

@@ -12,9 +12,11 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Middleware setup
+// Middleware setup - CORS allowed for local dev and production domains
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: (origin, callback) => {
+    callback(null, true); // Allow origin with credentials
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -30,8 +32,12 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start server locally if not running in Vercel serverless environment
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
