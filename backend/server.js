@@ -9,13 +9,17 @@ const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
-// Ensure DB connection for every request in serverless environment
+// Ensure DB connection for requests
 app.use(async (req, res, next) => {
-  await connectDB();
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('Database connection error:', err);
+  }
   next();
 });
 
-// Middleware setup - CORS allowed for local dev and production domains
+// Middleware setup
 app.use(cors({
   origin: (origin, callback) => {
     callback(null, true);
@@ -35,8 +39,8 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Start server locally if not running in Vercel serverless environment
-if (require.main === module) {
+// Start local server if launched directly via CLI
+if (process.env.NODE_ENV !== 'production' && require.main === module) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
