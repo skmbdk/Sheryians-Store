@@ -6,6 +6,7 @@ const app = express();
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get('/api/test', (req, res) => {
@@ -30,13 +31,12 @@ try {
   app.use('/api/products', productRoutes);
 } catch (err) {
   console.error('Module load error:', err);
-  app.use('/api/*', (req, res) => {
-    res.status(500).json({ error: 'Module Load Error', message: err.message, stack: err.stack });
-  });
 }
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-module.exports = app;
+module.exports = (req, res) => {
+  app(req, res);
+};
