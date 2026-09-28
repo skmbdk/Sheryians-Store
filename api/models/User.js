@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// User schema for authentication
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -29,4 +28,4 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);
