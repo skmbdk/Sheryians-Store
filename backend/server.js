@@ -9,13 +9,16 @@ const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
-// Connect to MongoDB
-connectDB();
+// Ensure DB connection for every request in serverless environment
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
 // Middleware setup - CORS allowed for local dev and production domains
 app.use(cors({
   origin: (origin, callback) => {
-    callback(null, true); // Allow origin with credentials
+    callback(null, true);
   },
   credentials: true
 }));
