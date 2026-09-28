@@ -1,14 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const connectDB = require('../backend/config/db');
+const connectDB = require('./config/db');
 
-const authRoutes = require('../backend/routes/authRoutes');
-const productRoutes = require('../backend/routes/productRoutes');
+const authRoutes = require('./routes/authRoutes');
+const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
-// Ensure DB connection for every request in Vercel serverless environment
+// Ensure DB connection for requests in serverless environment
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -33,15 +33,9 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 
-// Unknown routes
+// Handle unknown routes
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
-});
-
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error('Serverless Error:', err);
-  res.status(500).json({ message: err.message || 'Internal Server Error' });
 });
 
 module.exports = app;
