@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET || 'super_secret_access_key_12345';
+
 // Middleware to authenticate requests using JWT access token
 const authenticate = async (req, res, next) => {
   try {
@@ -11,7 +13,7 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const decoded = jwt.verify(token, ACCESS_SECRET);
 
     const user = await User.findById(decoded.id).select('-password -refreshToken');
     if (!user) {

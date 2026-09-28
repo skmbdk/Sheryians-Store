@@ -2,6 +2,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET || 'super_secret_access_key_12345';
+const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET || 'super_secret_refresh_key_67890';
+
 // Register a new user
 const register = async (req, res) => {
   try {
@@ -34,7 +37,7 @@ const register = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(500).json({ message: 'Server error during registration' });
+    return res.status(500).json({ message: error.message || 'Server error during registration' });
   }
 };
 
@@ -58,13 +61,13 @@ const login = async (req, res) => {
     // Create access token (15m) and refresh token (7d)
     const accessToken = jwt.sign(
       { id: user._id },
-      process.env.ACCESS_TOKEN_SECRET,
+      ACCESS_SECRET,
       { expiresIn: '15m' }
     );
 
     const refreshToken = jwt.sign(
       { id: user._id },
-      process.env.REFRESH_TOKEN_SECRET,
+      REFRESH_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -90,33 +93,29 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(500).json({ message: 'Server error during login' });
+    return res.status(500).json({ message: error.message || 'Server error during login' });
   }
 };
 
 // Issue a new access token using refresh token
 const refreshToken = async (req, res) => {
   try {
-    // Read refresh token from cookies or body
     const token = req.cookies?.refreshToken || req.body?.refreshToken;
 
     if (!token) {
       return res.status(401).json({ message: 'Refresh token missing' });
     }
 
-    // Verify token payload
-    const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+    const decoded = jwt.verify(token, REFRESH_SECRET);
 
-    // Find user and check if token matches DB record
     const user = await User.findById(decoded.id);
     if (!user || user.refreshToken !== token) {
       return res.status(403).json({ message: 'Invalid or revoked refresh token' });
     }
 
-    // Issue new short-lived access token
     const newAccessToken = jwt.sign(
       { id: user._id },
-      process.env.ACCESS_TOKEN_SECRET,
+      ACCESS_SECRET,
       { expiresIn: '15m' }
     );
 
@@ -135,7 +134,6 @@ const logout = async (req, res) => {
       await user.save();
     }
 
-    // Clear refresh token cookie
     res.clearCookie('refreshToken', {
       httpOnly: true,
       sameSite: 'lax'
